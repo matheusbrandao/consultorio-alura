@@ -1,0 +1,50 @@
+#!/bin/bash
+if [ ! $ENV_ALIAS == 'develop' ]; then
+  set -e
+  shopt -s dotglob
+  echo "---> Installing application source..."
+  mv /tmp/src/* ./
+fi
+
+# move pre push hook to git
+cp .s2i/bin/pre-push .git/hooks/pre-push
+chmod a+x .git/hooks/pre-push
+chmod 777 .git/hooks/pre-push
+
+echo "# Setting enviroment variables"
+envsubst < ".env.sample" > ".env"
+
+#composer of symfony
+if [ -f composer.json ] ; then
+  # Install Composer
+  echo '#### INSTALLING COMPOSER'
+  curl https://getcomposer.org/installer | php
+
+  if [ ! $ENV_ALIAS == 'prod' ]; then
+    ./composer.phar install --no-interaction --no-ansi --optimize-autoloader
+  else
+    ./composer.phar install --no-dev --no-interaction --no-ansi --optimize-autoloader
+  fi
+
+  echo '#### Cleaning composer'
+  rm composer.phar
+  rm -rf .composer
+  rm -rf .pki
+fi
+
+echo '#### Clearing cache'
+if [ $ENV_ALIAS == 'develop' ]; then
+  php bin/console cache:clear --env=$APP_ENV
+fi
+
+echo "# Fix source directory permissions"
+if [ ! $ENV_ALIAS == 'develop' ]; then
+  echo "### Fixing permissions"
+  fix-permissions ./
+fi
+
+# Run
+if [ $ENV_ALIAS == 'develop' ]; then
+  echo "### running run"
+  .s2i/bin/run
+fi

@@ -1,0 +1,39 @@
+version: '2'
+services:
+  proxy:
+    container_name: proxy
+    image: nginx:latest
+    volumes:
+      - "/var/run/docker.sock:/tmp/docker.sock:ro"
+      - "./proxy.conf:/etc/nginx/conf.d/my_proxy.conf:ro"
+    ports:
+      - '80:80'
+    depends_on:
+      - consultorio-api.com.br
+
+  db:
+    container_name: db
+    image: mariadb:10.2.19
+    volumes:
+      - "/.data:/var/lib/mysql"
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+    restart: unless-stopped
+
+  consultorio-api.com.br:
+    container_name: consultorio-api.com.br
+    build: ./php
+    volumes:
+      - ./:/opt/app-root/src:rw
+      - ./ssh-privatekey:/ssh-privatekey:ro
+    environment:
+      VIRTUAL_HOST: 'consultorio-api.com.br'
+      DOCUMENTROOT: /public
+      APP_DOMAIN: consultorio-api.com.br
+      ENV_ALIAS: develop
+      APP_SECRET: ce2347a087bd0b46cc97c9b973fc3119
+#    command: .s2i/bin/assemble
+    links:
+      - db

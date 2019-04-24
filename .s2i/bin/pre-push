@@ -1,0 +1,33 @@
+#!/bin/bash
+
+protected_branch='master'
+current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+
+if [ $protected_branch = $current_branch ]
+then
+    echo "    ______________________________________________________________  "
+    echo "   /                                                              \ "
+    echo "  |   Parece que você está tentando fazer push para o branch       |"
+    echo "  |   master. Este projeto está configurado com Webhook no         |"
+    echo "  |   Openshift, ao fazer push será feito deploy para produção.    |"
+    echo "   \______________________________________________________________/ "
+    echo "    \                                                               "
+    echo "     \                                                              "
+    echo "       __                                                           "
+    echo "      /  \                                                          "
+    echo "      |  |                                                          "
+    echo "      @  @|                                                         "
+    echo "      || ||                                                         "
+    echo "      |\_/|                                                         "
+    echo "      \___/                                                         "
+    printf "\n\n"
+    read -p "Deseja realmente fazer esta operação? (y/n) " -n 1 -r < /dev/tty
+    echo
+    if echo $REPLY | grep -E '^[Yy]$' > /dev/null
+    then
+        exit 0 # push will execute
+    fi
+    exit 1 # push will not execute
+else
+    exit 0 # push will execute
+fi
